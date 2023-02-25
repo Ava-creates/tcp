@@ -86,7 +86,6 @@ int main(int argc, char **argv) {
     clientlen = sizeof(clientaddr);
     int expected_seq = 0;
     int have_seq = -1;
-    int reject = 1;
     while (1) {
         /*
          * recvfrom: receive a UDP datagram from a client
@@ -108,7 +107,7 @@ int main(int argc, char **argv) {
          */
         gettimeofday(&tp, NULL);
         VLOG(DEBUG, "%d, %lu, %d, %d", expected_seq, tp.tv_sec, recvpkt->hdr.data_size, recvpkt->hdr.seqno);
-        if(expected_seq==recvpkt->hdr.seqno && reject==0){
+        if(expected_seq==recvpkt->hdr.seqno){
             fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
             fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
             sndpkt = make_packet(0);
@@ -121,7 +120,6 @@ int main(int argc, char **argv) {
             have_seq = expected_seq;
             expected_seq += recvpkt->hdr.data_size;
         }else{
-            reject = 0;
             sndpkt = make_packet(0);
             sndpkt->hdr.ackno = have_seq;
             sndpkt->hdr.ctr_flags = ACK;
