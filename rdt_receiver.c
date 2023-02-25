@@ -84,6 +84,9 @@ int main(int argc, char **argv) {
     VLOG(DEBUG, "epoch time, bytes received, sequence number");
 
     clientlen = sizeof(clientaddr);
+    int expected_seq = 0;
+    int have_seq = -1;
+    int reject = 1;
     while (1) {
         /*
          * recvfrom: receive a UDP datagram from a client
@@ -96,7 +99,7 @@ int main(int argc, char **argv) {
         recvpkt = (tcp_packet *) buffer;
         assert(get_data_size(recvpkt) <= DATA_SIZE);
         if ( recvpkt->hdr.data_size == 0) {
-            //VLOG(INFO, "End Of File has been reached");
+            VLOG(INFO, "End Of File has been reached");
             fclose(fp);
             break;
         }
@@ -104,16 +107,29 @@ int main(int argc, char **argv) {
          * sendto: ACK back to the client 
          */
         gettimeofday(&tp, NULL);
-        VLOG(DEBUG, "%lu, %d, %d", tp.tv_sec, recvpkt->hdr.data_size, recvpkt->hdr.seqno);
-
-        fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
-        fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
-        sndpkt = make_packet(0);
-        sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size;
-        sndpkt->hdr.ctr_flags = ACK;
-        if (sendto(sockfd, sndpkt, TCP_HDR_SIZE, 0, 
-                (struct sockaddr *) &clientaddr, clientlen) < 0) {
-            error("ERROR in sendto");
+        VLOG(DEBUG, "%d, %lu, %d, %d", expected_seq, tp.tv_sec, recvpkt->hdr.data_size, recvpkt->hdr.seqno);
+        if(expected_seq==recvpkt->hdr.seqno && reject==0){
+            fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
+            fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
+            sndpkt = make_packet(0);
+            sndpkt->hdr.ackno = recvpkt->hdr.seqno;
+            sndpkt->hdr.ctr_flags = ACK;
+            if (sendto(sockfd, sndpkt, TCP_HDR_SIZE, 0, 
+                    (struct sockaddr *) &clientaddr, clientlen) < 0) {
+                error("ERROR in sendto");
+            }
+            have_seq = expected_seq;
+            expected_seq += recvpkt->hdr.data_size;
+        }else{
+            reject = 0;
+            sndpkt = make_packet(0);
+            sndpkt->hdr.ackno = have_seq;
+            sndpkt->hdr.ctr_flags = ACK;
+            if (sendto(sockfd, sndpkt, TCP_HDR_SIZE, 0, 
+                    (struct sockaddr *) &clientaddr, clientlen) < 0) {
+                error("ERROR in sendto");
+            }
+            printf("discarded\n");
         }
     }
 
