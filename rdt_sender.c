@@ -15,7 +15,7 @@
 #include"common.h"
 
 #define STDIN_FD    0
-#define RETRY  1000 //millisecond
+#define RETRY  150 //millisecond
 
 int next_seqno=0;
 int send_base=0;
@@ -159,12 +159,9 @@ int main (int argc, char **argv)
             recvpkt = (tcp_packet *)buffer;
         }while(recvpkt->hdr.ackno < send_base);
         // ISSUE: SEND BASE GETTING UPDATED EVEN WHEN RECEIVER DIDN'T GET THE RIGHT PACKET
-        send_base = (recvpkt->hdr.ackno==-1?0:recvpkt->hdr.ackno)+DATA_SIZE;
+        send_base = recvpkt->hdr.ackno;
     }
     free(sndpkt);
     return 0;
 
 }
-
-
-

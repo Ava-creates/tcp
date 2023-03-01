@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
             expected_seq += recvpkt->hdr.data_size;
         }else{
             sndpkt = make_packet(0);
-            sndpkt->hdr.ackno = have_seq;
+            sndpkt->hdr.ackno = expected_seq;
             sndpkt->hdr.ctr_flags = ACK;
             if (sendto(sockfd, sndpkt, TCP_HDR_SIZE, 0, 
                     (struct sockaddr *) &clientaddr, clientlen) < 0) {
