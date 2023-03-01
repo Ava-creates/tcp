@@ -61,6 +61,7 @@ void init_timer(int delay, void (*sig_handler)(int))
     sigaddset(&sigmask, SIGALRM);
 }
 
+// send da packet with sequence num 😎
 int send_packet(int seq_num){
     char buffer[DATA_SIZE];
     fseek(fp, seq_num, SEEK_SET);
@@ -75,6 +76,7 @@ int send_packet(int seq_num){
     return 0;
 }
 
+// send (but many depending on start and end 👍)
 void send_bulk(int start_seq_num, int end_seq_num){
     for(int i = start_seq_num; i<end_seq_num; i+=DATA_SIZE){
         if(send_packet(i)==-1){
@@ -86,6 +88,7 @@ void send_bulk(int start_seq_num, int end_seq_num){
     }
 }
 
+// resent packets with current base
 void resend_packets(int sig){
     if (sig == SIGALRM)
     {
@@ -158,7 +161,7 @@ int main (int argc, char **argv)
             recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
             recvpkt = (tcp_packet *)buffer;
         }while(recvpkt->hdr.ackno < send_base);
-        // ISSUE: SEND BASE GETTING UPDATED EVEN WHEN RECEIVER DIDN'T GET THE RIGHT PACKET
+
         send_base = recvpkt->hdr.ackno;
     }
     free(sndpkt);
