@@ -8,9 +8,14 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <assert.h>
+
 #include "common.h"
 #include "packet.h"
 
+/**
+ *  TODO:
+ *    - Buffer out of order packets
+ */
 
 /*
  * You are required to change the implementation to support
@@ -20,6 +25,28 @@
  */
 tcp_packet *recvpkt;
 tcp_packet *sndpkt;
+
+
+
+struct node
+{   
+    tcp_packet* packet; 
+    node* next; 
+};
+
+void addNode(tcp_packet *head,  tcp_packet *pkt)
+{
+    if(head==NULL)
+    {
+        head= pkt;
+    }
+
+    else{
+        tcp_packet *curr= head; 
+        while()
+    }
+}
+
 
 int main(int argc, char **argv) {
     int sockfd; /* socket */
