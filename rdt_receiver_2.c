@@ -26,9 +26,9 @@
 tcp_packet *recvpkt;
 tcp_packet *sndpkt;
 
-typedef struct{
+typedef struct blist{
     tcp_packet* pkt;
-    BufferList* next;
+    struct blist* next;
 } BufferList;
 
 BufferList* createBufferList(tcp_packet* pkt){
@@ -148,9 +148,9 @@ int main(int argc, char **argv) {
         recvpkt = (tcp_packet *) buffer;
         assert(get_data_size(recvpkt) <= DATA_SIZE);
         if ( recvpkt->hdr.data_size == 0) {
-            VLOG(INFO, "ayo");
-            VLOG(INFO, "End Of File has been reached");
-            printBList(head);
+            // printBList(head);
+            printf("DONE\n");
+            // VLOG(INFO, "End Of File has been reached");
             fclose(fp);
             break;
         }
@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
         gettimeofday(&tp, NULL);
         VLOG(DEBUG, "%d, %lu, %d, %d", expected_seq, tp.tv_sec, recvpkt->hdr.data_size, recvpkt->hdr.seqno);
         if(expected_seq==recvpkt->hdr.seqno){
-            addNode(head, recvpkt);
+            // addNode(head, recvpkt);
             fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
             fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
             sndpkt = make_packet(0);

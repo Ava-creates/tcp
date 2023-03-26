@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <assert.h>
+#include <math.h>
 
 #include"packet.h"
 #include"common.h"
@@ -57,10 +58,17 @@ sentElem** sentElemArr;
 
 int getFromSent(sentElem** elems, int seqno){
     for(int i = 0; i<sent_track; i++){
-        if(elems[i]->seqno == seqno){
+        printf("GOOD, %d/%d, %d\n", i, sent_track, seqno);
+        if(elems[i]!=NULL){
+            printf("printing\n");
+            printf("time: %d\n", elems[i]->time);
+        }
+        if(elems[i]!=NULL && elems[i]->seqno == seqno){
             int time = elems[i]->time;
-            free(elems[i]);
+            sentElem* cpy = elems[i];
             elems[i] = NULL;
+            free(cpy);
+            printf("%d found here\n", seqno);
             return time;
         }
     }
@@ -69,16 +77,18 @@ int getFromSent(sentElem** elems, int seqno){
 void addtoSent(sentElem** elems, int seqno){
     for(int i = 0; i<sent_track; i++){
         if(elems[i] == NULL){
-            elems[i] = (sentElem*) malloc(sizeof(sentElem));
-            elems[i]->seqno = seqno;
-            elems[i]->time = (int) time(NULL);
+            sentElem* newElem = (sentElem*) malloc(sizeof(sentElem));
+            newElem->seqno = seqno;
+            newElem->time = (int) time(NULL);
+            elems[i] = newElem;
             return;
         }
     }
-    elems = realloc(sizeof(sentElem), sent_track+1);
-    elems[sent_track] = (sentElem*) malloc(sizeof(sentElem));
-    elems[sent_track]->seqno = seqno;
-    elems[sent_track]->time = (int) time(NULL);
+    elems = realloc(elems, sizeof(sentElem*) * (sent_track+1));
+    sentElem* newElem = (sentElem*) malloc(sizeof(sentElem));
+    newElem->seqno = seqno;
+    newElem->time = (int) time(NULL);
+    elems[sent_track] = newElem;
     sent_track+=1;
     return;
 }
@@ -103,7 +113,15 @@ void destroySentElems (sentElem** elems){
  *      - Fast Retransmit
  *  - RTT estimator
  *  - Retransmission timeout timer
- * /
+** /
+
+
+/*
+ * init_timer: Initialize timer
+ * delay: delay in milliseconds
+ * sig_handler: signal handler function for re-sending unACKed packets
+ */
+
 
 void start_timer()
 {
@@ -116,13 +134,6 @@ void stop_timer()
 {
     sigprocmask(SIG_BLOCK, &sigmask, NULL);
 }
-
-
-/*
- * init_timer: Initialize timer
- * delay: delay in milliseconds
- * sig_handler: signal handler function for re-sending unACKed packets
- */
 void init_timer(int delay, void (*sig_handler)(int)) 
 {
     signal(SIGALRM, sig_handler);
@@ -133,6 +144,18 @@ void init_timer(int delay, void (*sig_handler)(int))
 
     sigemptyset(&sigmask);
     sigaddset(&sigmask, SIGALRM);
+}
+
+int send_packet(int seq_num);
+
+// resent packets with current base
+void resend_packets(int sig){
+    if (sig == SIGALRM)
+    {
+        VLOG(INFO, "Timeout happend");
+        send_packet(send_base);
+        next_seqno = send_base+DATA_SIZE;
+    }
 }
 
 // send da packet with sequence num 😎
@@ -147,7 +170,7 @@ int send_packet(int seq_num){
     memcpy(sndpkt->data, buffer, len);
     sndpkt->hdr.seqno = seq_num;
     sendto(sockfd, sndpkt, TCP_HDR_SIZE + get_data_size(sndpkt),  0, (const struct sockaddr *) &serveraddr, serverlen);
-    addtoSent(sentElemArr, seq_num);
+    // addtoSent(sentElemArr, seq_num);
     init_timer(rto, resend_packets);
     return 0;
 }
@@ -164,18 +187,10 @@ void send_bulk(int start_seq_num, int end_seq_num){
     }
 }
 
-// resent packets with current base
-void resend_packets(int sig){
-    if (sig == SIGALRM)
-    {
-        VLOG(INFO, "Timeout happend");
-        send_packet(send_base);
-        next_seqno = send_base+DATA_SIZE;
-    }
-}
-
 int main (int argc, char **argv)
 {
+    sentElemArr = (sentElem**) malloc(sent_track*sizeof(sentElem*));
+    sentElemArr[0] = NULL;
     int portno;
     char *hostname;
     char buffer[DATA_SIZE];
@@ -213,9 +228,6 @@ int main (int argc, char **argv)
     serveraddr.sin_port = htons(portno);
 
     assert(MSS_SIZE - TCP_HDR_SIZE > 0);
-
-    sentElemArr = (sentElem**) malloc(sent_track*sizeof(sentElem));
-
     //Stop and wait protocol
     next_seqno = 0; // next packet to send
     int previous=0; 
@@ -238,13 +250,13 @@ int main (int argc, char **argv)
         do{
             recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
             recvpkt = (tcp_packet *)buffer;
-            int rec = getFromSent(sentElemArr, recvpkt->hdr.ackno-DATA_SIZE);
+            int rec = 200; //getFromSent(sentElemArr, recvpkt->hdr.ackno-DATA_SIZE);
             if(rec){
                 update_rto(rec);
             }
 
             if( recvpkt->hdr.ackno - DATA_SIZE== previous && previous==double_previous) {
-                    ssthresh=floor(max(window_size/2, 2));
+                    ssthresh=floor(fmax(window_size/2, 2));
                     window_size=1;
                     //slow start begins again
             } else {
@@ -257,7 +269,7 @@ int main (int argc, char **argv)
                     window_size++; 
                 }
                 else{
-                    ssthresh=floor(max(window_size/2, 2));
+                    ssthresh=floor(fmax(window_size/2, 2));
                     // congestion avoidance
                 }
 
