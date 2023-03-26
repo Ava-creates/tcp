@@ -32,33 +32,54 @@ typedef struct blist{
 } BufferList;
 
 BufferList* createBufferList(tcp_packet* pkt){
-    BufferList* list = (BufferList*) malloc(sizeof(BufferList));
+    BufferList* list = (BufferList*) malloc(sizeof(BufferList)); 
     list->next = NULL;
     list->pkt = make_packet(pkt->hdr.data_size);
     char buffer[DATA_SIZE];
     memcpy(list->pkt->data, buffer, pkt->hdr.data_size);
+    list->pkt->hdr.seqno = pkt->hdr.seqno;
     return list;
 }
 
-void addNode(BufferList* head,  tcp_packet *pkt)
+
+
+
+void addNode(BufferList ** head,  tcp_packet *pkt)
 {
-    if(head==NULL)
+    BufferList  *start ;
+    // printf("here\n");
+    start = *head;
+     
+    // printf("here\n");
+    BufferList* new_pkt = createBufferList(pkt);
+    // printf("of packet tryna store seqno: %d\n", new_pkt->pkt->hdr.seqno);
+
+    if(start==NULL)
     {
-        head = createBufferList(pkt);
+        start = new_pkt;
+        printf("seqno: %d\n", start->pkt->hdr.seqno);
+        // if(head!=NULL)
+        // {
+        //     printf("okay now head not null\n");
+        // }
+
+        *head= start;
         return;
     }
 
-    BufferList* curr = head; 
+    BufferList* curr = start; 
     while(curr->next && curr->pkt->hdr.seqno < pkt->hdr.seqno){
         curr = curr->next;
     }
     if(!curr->next){
-        curr->next = createBufferList(pkt);
+        curr->next = new_pkt;
     }else{
         BufferList* next = curr->next;
-        curr->next = createBufferList(pkt);
+        curr->next = new_pkt;
         curr->next->next = next; 
-    }
+    }   
+    // printf("IDK WHAT'S HAPPENIGN \n");
+    // printf("seqno: %d\n", start->pkt->hdr.seqno);
 }
 
 void printBList(BufferList* head){
@@ -68,6 +89,21 @@ void printBList(BufferList* head){
         printf("seqno: %d\n", curr->pkt->hdr.seqno);
         curr = curr->next;
     }
+}
+
+
+void write_from_buffer_to_file(BufferList* head, FILE *fp)
+{
+    BufferList* curr = head;
+    // printf("hereeee\n");
+    while(curr){
+        printf("seqno: %d\n", curr->pkt->hdr.seqno);
+        // fseek(fp, curr->pkt->hdr.seqno, SEEK_SET);
+        // fwrite(curr->pkt->data, 1, curr->pkt->hdr.data_size, fp);
+        // printf("hereeee\n");
+        curr = curr->next;
+    }
+    
 }
 
 
@@ -151,8 +187,9 @@ int main(int argc, char **argv) {
             // we get FIN!
             sndpkt->hdr.data_size = 0;
             sendto(sockfd, sndpkt, TCP_HDR_SIZE,  0, (const struct sockaddr *)&clientaddr, clientlen);
-            // printBList(head);
+           // printBList(head);
             printf("DONE\n");
+            write_from_buffer_to_file(head, fp);
             fclose(fp);
             break;
         }
@@ -162,7 +199,11 @@ int main(int argc, char **argv) {
         gettimeofday(&tp, NULL);
         VLOG(DEBUG, "%d, %lu, %d, %d", expected_seq, tp.tv_sec, recvpkt->hdr.data_size, recvpkt->hdr.seqno);
         if(expected_seq==recvpkt->hdr.seqno){
-            // addNode(head, recvpkt);
+            if(head==NULL)
+            {
+                printf("head is null\n");
+            }
+            addNode(&head, recvpkt);
             fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
             fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
             sndpkt = make_packet(0);
@@ -185,6 +226,8 @@ int main(int argc, char **argv) {
             printf("discarded\n");
         }
     }
+
+    
 
     return 0;
 }
