@@ -76,6 +76,25 @@ void addtoSendList(sentElemNode* head, int seqno){
     curr->next = newNode;
 }
 
+void removeMinFromSendList(sentElemNode* head, int minseqno){
+    if(head == NULL){
+        return;
+    }
+    sentElemNode* curr = head;
+    sentElemNode* prev = NULL;
+    while(curr!=NULL && curr->seqno >= minseqno){
+        prev = curr;
+        curr = curr->next;
+    }
+    if(prev == NULL || curr == NULL){
+        return;
+    }
+    sentElemNode* next = curr->next;
+    prev->next = curr->next;
+    free(curr);
+    removeMinFromSendList(next, minseqno);
+}
+
 void removeFromSendList(sentElemNode* head, int seqno){
     sentElemNode* curr = head;
     sentElemNode* prev = NULL;
@@ -304,6 +323,7 @@ int main (int argc, char **argv)
         while(recvpkt->hdr.ackno < send_base);
 
         send_base = fmax(send_base, recvpkt->hdr.ackno);
+        removeMinFromSendList(head->next, send_base);
     }
     free(sndpkt);
     return 0;
