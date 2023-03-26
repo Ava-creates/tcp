@@ -149,6 +149,7 @@ int main(int argc, char **argv) {
         assert(get_data_size(recvpkt) <= DATA_SIZE);
         if ( recvpkt->hdr.data_size == 0) {
             // we get FIN!
+            sndpkt->hdr.data_size = 0;
             sendto(sockfd, sndpkt, TCP_HDR_SIZE,  0, (const struct sockaddr *)&clientaddr, clientlen);
             // printBList(head);
             printf("DONE\n");
