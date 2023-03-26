@@ -32,9 +32,7 @@ int estimated_rtt = 0;
 int dev_rtt = 0;
 
 // update rto whenever we get a packet back
-void update_rto(int sent_time){
-    int curr_time = (int) time(NULL);
-    int sample_rtt = curr_time - sent_time;
+void update_rto(int sample_rtt){
     estimated_rtt = (1-ALPHA) * estimated_rtt + ALPHA * sample_rtt;
     dev_rtt = (1-BETA) * dev_rtt + BETA * abs(estimated_rtt - sample_rtt);
     rto = estimated_rtt + 4 * dev_rtt;
@@ -77,7 +75,7 @@ void addtoSendList(sentElemNode* head, int seqno){
     curr->next = newNode;
 }
 
-int getTimeFromSendList(sentElemNode* head, int seqno){
+void removeFromSendList(sentElemNode* head, int seqno){
     sentElemNode* curr = head;
     sentElemNode* prev = NULL;
     while(curr!=NULL && curr->seqno != seqno){
@@ -88,12 +86,30 @@ int getTimeFromSendList(sentElemNode* head, int seqno){
     // could not find for some reason
     if(curr == NULL){
         printf("could not find %d\n", seqno);
-        return (int) time(NULL);
+        return;
     }
 
     prev->next = curr->next;
     int ret = curr->time;
     printf("removing %d\n", curr->seqno);
+    free(curr);
+}
+
+int getTimeFromSendList(sentElemNode* head, int seqno){
+    sentElemNode* curr = head;
+    sentElemNode* prev = NULL;
+    while(curr!=NULL && curr->seqno != seqno){
+        prev = curr;
+        curr = curr->next;
+    }
+
+    // could not find for some reason
+    if(curr == NULL){
+        return (int) time(NULL);
+    }
+
+    prev->next = curr->next;
+    int ret = curr->time;
     free(curr);
     return ret;
 }
@@ -148,8 +164,15 @@ void resend_packets(int sig){
     if (sig == SIGALRM)
     {
         VLOG(INFO, "Timeout happend");
-        send_packet(send_base);
-        next_seqno = send_base+DATA_SIZE;
+        if(head->next){
+            send_packet(head->next->seqno);
+            sentElemNode* toRemove = head->next;
+            head->next = head->next->next;
+            free(toRemove);
+        }else{
+            printf("nothing to send\n");
+        }
+        // next_seqno = send_base+DATA_SIZE;
     }
 }
 
@@ -247,10 +270,10 @@ int main (int argc, char **argv)
             recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
             recvpkt = (tcp_packet *)buffer;
             int rec = (int) time(NULL) - getTimeFromSendList(head, recvpkt->hdr.ackno-DATA_SIZE);
-            printf("rtt for %lu was %d\n", recvpkt->hdr.ackno-DATA_SIZE, rec);
-            printf("new timeout is %d\n", rto);
+            printf("rtt for %lu was %d\n", recvpkt->hdr.ackno, rec);
             if(rec){
                 update_rto(rec);
+                printf("new rtt: %d\n", rto);
             }
 
             if( recvpkt->hdr.ackno - DATA_SIZE== previous && previous==double_previous) {
