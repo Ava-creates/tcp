@@ -80,11 +80,10 @@ int main(int argc, char **argv) {
     /* 
      * main loop: wait for a datagram, then echo it
      */
-    VLOG(DEBUG, "epoch time, bytes received, sequence number");
+    VLOG(DEBUG, "expected_seq, epoch time, bytes received, sequence number");
 
     clientlen = sizeof(clientaddr);
     int expected_seq = 0;
-    int have_seq = -1;
     while (1) {
         /*
          * recvfrom: receive a UDP datagram from a client
@@ -116,7 +115,6 @@ int main(int argc, char **argv) {
                     (struct sockaddr *) &clientaddr, clientlen) < 0) {
                 error("ERROR in sendto");
             }
-            have_seq = expected_seq;
             expected_seq += recvpkt->hdr.data_size;
         }else{
             sndpkt = make_packet(0);

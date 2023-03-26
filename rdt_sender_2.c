@@ -247,6 +247,7 @@ int main (int argc, char **argv)
             recvpkt = (tcp_packet *)buffer;
             int rec = (int) time(NULL) - getTimeFromSendList(head, recvpkt->hdr.ackno-DATA_SIZE);
             printf("rtt for %lu was %d\n", recvpkt->hdr.ackno-DATA_SIZE, rec);
+            printf("new timeout is %d\n", rto);
             if(rec){
                 update_rto(rec);
             }
