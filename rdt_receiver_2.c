@@ -26,24 +26,47 @@
 tcp_packet *recvpkt;
 tcp_packet *sndpkt;
 
+typedef struct{
+    tcp_packet* pkt;
+    BufferList* next;
+} BufferList;
 
+BufferList* createBufferList(tcp_packet* pkt){
+    BufferList* list = (BufferList*) malloc(sizeof(BufferList));
+    list->next = NULL;
+    list->pkt = make_packet(pkt->hdr.data_size);
+    char buffer[DATA_SIZE];
+    memcpy(list->pkt->data, buffer, pkt->hdr.data_size);
+    return list;
+}
 
-struct node
-{   
-    tcp_packet* packet; 
-    node* next; 
-};
-
-void addNode(tcp_packet *head,  tcp_packet *pkt)
+void addNode(BufferList* head,  tcp_packet *pkt)
 {
     if(head==NULL)
     {
-        head= pkt;
+        head = createBufferList(pkt);
+        return;
     }
 
-    else{
-        tcp_packet *curr= head; 
-        while()
+    BufferList* curr = head; 
+    while(curr->next && curr->pkt->hdr.seqno < pkt->hdr.seqno){
+        curr = curr->next;
+    }
+    if(!curr->next){
+        curr->next = createBufferList(pkt);
+    }else{
+        BufferList* next = curr->next;
+        curr->next = createBufferList(pkt);
+        curr->next->next = next; 
+    }
+}
+
+void printBList(BufferList* head){
+    printf("printing now\n");
+    BufferList* curr = head;
+    while(curr){
+        printf("seqno: %d\n", curr->pkt->hdr.seqno);
+        curr = curr->next;
     }
 }
 
@@ -58,6 +81,7 @@ int main(int argc, char **argv) {
     FILE *fp;
     char buffer[MSS_SIZE];
     struct timeval tp;
+    BufferList* head = NULL;
 
     /* 
      * check command line arguments 
@@ -124,7 +148,9 @@ int main(int argc, char **argv) {
         recvpkt = (tcp_packet *) buffer;
         assert(get_data_size(recvpkt) <= DATA_SIZE);
         if ( recvpkt->hdr.data_size == 0) {
+            VLOG(INFO, "ayo");
             VLOG(INFO, "End Of File has been reached");
+            printBList(head);
             fclose(fp);
             break;
         }
@@ -134,6 +160,7 @@ int main(int argc, char **argv) {
         gettimeofday(&tp, NULL);
         VLOG(DEBUG, "%d, %lu, %d, %d", expected_seq, tp.tv_sec, recvpkt->hdr.data_size, recvpkt->hdr.seqno);
         if(expected_seq==recvpkt->hdr.seqno){
+            addNode(head, recvpkt);
             fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
             fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
             sndpkt = make_packet(0);
