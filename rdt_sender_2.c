@@ -303,7 +303,7 @@ int main (int argc, char **argv)
 
         while(recvpkt->hdr.ackno < send_base);
 
-        send_base = recvpkt->hdr.ackno;
+        send_base = fmax(send_base, recvpkt->hdr.ackno);
     }
     free(sndpkt);
     return 0;
