@@ -19,6 +19,7 @@
 #define ALPHA 0.125
 #define BETA 0.25
 
+
 int ssthresh=64; 
 int next_seqno=0;
 int send_base=0;
@@ -185,8 +186,8 @@ void resend_packets(int sig){
     if (sig == SIGALRM)
     {
         VLOG(INFO, "Timeout happend");
-        ssthresh=fmax(floor(window_size/2), 2 ); 
-        window_size=1;
+        ssthresh=fmax(floor(window_size/2), 2 );  
+        window_size=1;   //this will lead to slow start on next sent again as the window_size < ssthresh
         if(head->next){
             send_packet(head->next->seqno);
             sentElemNode* toRemove = head->next;
@@ -329,7 +330,11 @@ int main (int argc, char **argv)
                     ssthresh=floor(fmax(window_size/2, 2));
                     window_size=1;
                     send_packet(recvpkt->hdr.ackno);
-                    //slow start begins again
+
+                    printf("fast retransmit \n");
+
+                    continue;
+                    //slow start begins again on the next receive automatically cause window_size < ssthresh 
             } else {
                 triple_previous=double_previous;
                 double_previous=previous; 
@@ -338,24 +343,17 @@ int main (int argc, char **argv)
 
 
         
+           //slow start 
             if(floor(window_size)<=ssthresh){
                     window_size = window_size + 1.0; 
+                    fprintf(output,"%f,%d\n", window_size, (int) time(NULL));
+                    printf("window size is; %f\n", window_size);
+                    continue;
                 }
-            else{
-                window_size+=1/window_size;
-            }
-
-            
+ 
+            window_size+=1/window_size;   //if not in slow_start then in congestion avoidance
             fprintf(output,"%f,%d\n", window_size, (int) time(NULL));
-
-
-            
-
-            // } else{
-            //     window_size+=1/window_size;
-            // }
-            printf("window size is; %f\n", window_size);
-                
+            printf("window size is; %f\n", window_size);      
         }      
 
         while(recvpkt->hdr.ackno < send_base);
