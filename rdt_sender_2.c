@@ -185,6 +185,8 @@ void resend_packets(int sig){
     if (sig == SIGALRM)
     {
         VLOG(INFO, "Timeout happend");
+        sshtresh=fmax(floor(window_size/2), 2 ); 
+        window_size=1;
         if(head->next){
             send_packet(head->next->seqno);
             sentElemNode* toRemove = head->next;
@@ -193,6 +195,8 @@ void resend_packets(int sig){
         }else{
             printf("nothing to send\n");
         }
+
+
         // next_seqno = send_base+DATA_SIZE;
     }
 }
@@ -284,7 +288,8 @@ int main (int argc, char **argv)
     //Stop and wait protocol
     next_seqno = 0; // next packet to send
     int previous=0; 
-    int double_previous=0; 
+    int double_previous=1; 
+    int triple_previous =2; 
     fseek(fp, 0L, SEEK_END);
     long file_size = ftell(fp);
     while(1){
@@ -318,27 +323,33 @@ int main (int argc, char **argv)
                 printf("new rtt: %d\n", rto);
             }
 
-            if( recvpkt->hdr.ackno - DATA_SIZE== previous && previous==double_previous) {
+            //triple ack 
+            if( recvpkt->hdr.ackno - DATA_SIZE== previous && previous==double_previous  && double_previous == triple_previous) {
                     ssthresh=floor(fmax(window_size/2, 2));
                     window_size=1;
+                    send_packet(recvpkt->hdr.ackno);
                     //slow start begins again
             } else {
+                triple_previous=double_previous;
                 double_previous=previous; 
-                previous = recvpkt->hdr.ackno-DATA_SIZE; 
+                previous = recvpkt->hdr.ackno- DATA_SIZE; 
             }
 
-            if (send_base == recvpkt->hdr.ackno - DATA_SIZE) {   //this checks for packet loss??
-                if(floor(window_size)<=ssthresh){
+
+        
+            if(floor(window_size)<=ssthresh){
                     window_size++; 
                 }
-                else{
-                    ssthresh=floor(fmax(window_size/2, 2));
-                    // congestion avoidance
-                }
-
-            } else{
+            else{
                 window_size+=1/window_size;
             }
+
+            
+
+            // } else{
+            //     window_size+=1/window_size;
+            // }
+            printf("window size is; %d\n", window_size);
                 
         }      
 
@@ -346,6 +357,7 @@ int main (int argc, char **argv)
 
         send_base = fmax(send_base, recvpkt->hdr.ackno);
         removeMinFromSendList(head->next, send_base);
+        printf("curr window: %d to %d\n", send_base, send_base+floor(window_size)*DATA_SIZE);
     }
     cleanup();
     return 0;
