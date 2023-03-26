@@ -22,7 +22,7 @@
 int ssthresh=64; 
 int next_seqno=0;
 int send_base=0;
-float window_size = 1;
+double window_size = 1;
 int done = 0;
 
 // RTO = estimated_rtt + 4 * dev_rtt
@@ -247,6 +247,7 @@ void endNotFound(int sig){
 
 int main (int argc, char **argv)
 {
+    FILE* output = fopen("CWND.csv", "w+");
     head = createSentElemNode(-1);
     int portno;
     char *hostname;
@@ -338,18 +339,22 @@ int main (int argc, char **argv)
 
         
             if(floor(window_size)<=ssthresh){
-                    window_size++; 
+                    window_size = window_size + 1.0; 
                 }
             else{
                 window_size+=1/window_size;
             }
 
             
+            fprintf(output,"%f,%d\n", window_size, (int) time(NULL));
+
+
+            
 
             // } else{
             //     window_size+=1/window_size;
             // }
-            printf("window size is; %d\n", window_size);
+            printf("window size is; %f\n", window_size);
                 
         }      
 
@@ -357,8 +362,9 @@ int main (int argc, char **argv)
 
         send_base = fmax(send_base, recvpkt->hdr.ackno);
         removeMinFromSendList(head->next, send_base);
-        printf("curr window: %d to %d\n", send_base, send_base+floor(window_size)*DATA_SIZE);
+        printf("curr window: %d to %f\n", send_base, send_base+floor(window_size)*(double)DATA_SIZE);
     }
     cleanup();
+    fclose(output);
     return 0;
 }
