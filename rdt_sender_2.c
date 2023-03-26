@@ -168,6 +168,7 @@ int send_packet(int seq_num){
     printf("sent: %d\n", seq_num);
     addtoSendList(head, seq_num);
     init_timer(rto, resend_packets);
+    start_timer();
     return 0;
 }
 
@@ -177,9 +178,9 @@ void send_bulk(int start_seq_num, int end_seq_num){
         if(send_packet(i)==-1){
             break; //EOF
         }
-        if(send_base==i){
-            start_timer();
-        }
+        // if(send_base==i){
+        //     start_timer();
+        // }
     }
 }
 
