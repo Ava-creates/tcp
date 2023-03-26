@@ -20,6 +20,10 @@ parser.add_argument('--trace', '-tr',
                     help="name of the trace",
                     required=True)
 
+parser.add_argument('--cwnd', '-cwnd',
+                    help="cwnd file",
+                    required=True)
+
 args = parser.parse_args()
 
 fig = plt.figure(figsize=(21,3), facecolor='w')
@@ -39,6 +43,14 @@ for line in f1:
     else:
         cnt+=1
 f1.close()
+
+x = []
+y = []
+
+with open(args.cwnd, "r") as f2:
+    for idx, line in enumerate(f2):
+        [cwnd, time] = line.split(',')
+        x.append(int(cwnd.strip())); y.append(idx+int(time.strip()))     
 
 ax.fill_between(range(len(BW)), 0, list(map(scale,BW)),color='#D3D3D3')
 
@@ -72,4 +84,5 @@ plt.ylabel("Throughput (Mbps)")
 plt.xlabel("Time (s)")
 # plt.xlim([0,300])
 plt.grid(True, which="both")
+plt.plot([x,y])
 plt.savefig(args.dir+'/throughput.pdf',dpi=1000,bbox_inches='tight')

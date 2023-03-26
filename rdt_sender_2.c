@@ -301,7 +301,7 @@ int main (int argc, char **argv)
             // send close
             sendto(sockfd, sndpkt, TCP_HDR_SIZE,  0,
                     (const struct sockaddr *)&serveraddr, serverlen);
-            init_timer(5000, resend_packets);
+            init_timer(5000, endNotFound);
             start_timer();
             recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
             if(recvpkt->hdr.data_size == 0){
