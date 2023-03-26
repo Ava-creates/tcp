@@ -49,59 +49,54 @@ sigset_t sigmask;
 FILE *fp;
 int sent_track = 1;
 
-typedef struct {
+typedef struct selem{
     int seqno;
     int time;
-} sentElem;
-sentElem** sentElemArr;
+    struct selem* next;
+}sentElemNode;
+sentElemNode* head;
 
-
-int getFromSent(sentElem** elems, int seqno){
-    for(int i = 0; i<sent_track; i++){
-        printf("GOOD, %d/%d, %d\n", i, sent_track, seqno);
-        if(elems[i]!=NULL){
-            printf("printing\n");
-            printf("time: %d\n", elems[i]->time);
-        }
-        if(elems[i]!=NULL && elems[i]->seqno == seqno){
-            int time = elems[i]->time;
-            sentElem* cpy = elems[i];
-            elems[i] = NULL;
-            free(cpy);
-            printf("%d found here\n", seqno);
-            return time;
-        }
-    }
+sentElemNode* createSentElemNode(int seqno){
+    sentElemNode* newNode = (sentElemNode*) malloc(sizeof(sentElemNode));
+    newNode->seqno = seqno;
+    newNode->time = (int) time(NULL);
+    newNode->next = NULL;
+    return newNode;
 }
 
-void addtoSent(sentElem** elems, int seqno){
-    for(int i = 0; i<sent_track; i++){
-        if(elems[i] == NULL){
-            sentElem* newElem = (sentElem*) malloc(sizeof(sentElem));
-            newElem->seqno = seqno;
-            newElem->time = (int) time(NULL);
-            elems[i] = newElem;
-            return;
-        }
+void addtoSendList(sentElemNode* head, int seqno){
+    sentElemNode* newNode = createSentElemNode(seqno);
+    if(head == NULL){
+        head = newNode;
+        return;
     }
-    elems = realloc(elems, sizeof(sentElem*) * (sent_track+1));
-    sentElem* newElem = (sentElem*) malloc(sizeof(sentElem));
-    newElem->seqno = seqno;
-    newElem->time = (int) time(NULL);
-    elems[sent_track] = newElem;
-    sent_track+=1;
-    return;
+    sentElemNode* curr = head;
+    while(curr->next != NULL){
+        curr = curr->next;
+    }
+    curr->next = newNode;
 }
 
-void destroySentElems (sentElem** elems){
-    for(int i = 0; i<sent_track; i++){
-        if(elems[i] != NULL){
-            free(elems[i]);
-        }
+int getTimeFromSendList(sentElemNode* head, int seqno){
+    sentElemNode* curr = head;
+    sentElemNode* prev = NULL;
+    while(curr!=NULL && curr->seqno != seqno){
+        prev = curr;
+        curr = curr->next;
     }
-    free(elems);
-}
 
+    // could not find for some reason
+    if(curr == NULL){
+        printf("could not find %d\n", seqno);
+        return (int) time(NULL);
+    }
+
+    prev->next = curr->next;
+    int ret = curr->time;
+    printf("removing %d\n", curr->seqno);
+    free(curr);
+    return ret;
+}
 
 
 /**
@@ -170,7 +165,8 @@ int send_packet(int seq_num){
     memcpy(sndpkt->data, buffer, len);
     sndpkt->hdr.seqno = seq_num;
     sendto(sockfd, sndpkt, TCP_HDR_SIZE + get_data_size(sndpkt),  0, (const struct sockaddr *) &serveraddr, serverlen);
-    // addtoSent(sentElemArr, seq_num);
+    printf("sent: %d\n", seq_num);
+    addtoSendList(head, seq_num);
     init_timer(rto, resend_packets);
     return 0;
 }
@@ -189,8 +185,7 @@ void send_bulk(int start_seq_num, int end_seq_num){
 
 int main (int argc, char **argv)
 {
-    sentElemArr = (sentElem**) malloc(sent_track*sizeof(sentElem*));
-    sentElemArr[0] = NULL;
+    head = createSentElemNode(-1);
     int portno;
     char *hostname;
     char buffer[DATA_SIZE];
@@ -250,7 +245,8 @@ int main (int argc, char **argv)
         do{
             recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
             recvpkt = (tcp_packet *)buffer;
-            int rec = 200; //getFromSent(sentElemArr, recvpkt->hdr.ackno-DATA_SIZE);
+            int rec = (int) time(NULL) - getTimeFromSendList(head, recvpkt->hdr.ackno-DATA_SIZE);
+            printf("rtt for %lu was %d\n", recvpkt->hdr.ackno-DATA_SIZE, rec);
             if(rec){
                 update_rto(rec);
             }
@@ -284,7 +280,6 @@ int main (int argc, char **argv)
         send_base = recvpkt->hdr.ackno;
     }
     free(sndpkt);
-    destroySentElems(sentElemArr);
     return 0;
 
 }
