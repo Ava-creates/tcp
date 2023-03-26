@@ -185,7 +185,7 @@ void resend_packets(int sig){
     if (sig == SIGALRM)
     {
         VLOG(INFO, "Timeout happend");
-        sshtresh=fmax(floor(window_size/2), 2 ); 
+        ssthresh=fmax(floor(window_size/2), 2 ); 
         window_size=1;
         if(head->next){
             send_packet(head->next->seqno);
