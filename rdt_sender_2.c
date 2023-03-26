@@ -23,6 +23,7 @@ int ssthresh=64;
 int next_seqno=0;
 int send_base=0;
 float window_size = 1;
+int done = 0;
 
 // RTO = estimated_rtt + 4 * dev_rtt
 // estimated_rtt = (1-a) * estimated_rtt + a * sample_rtt
@@ -227,6 +228,19 @@ void send_bulk(int start_seq_num, int end_seq_num){
     }
 }
 
+
+void cleanup(){
+    free(sndpkt);
+}
+
+void endNotFound(int sig){
+    if (sig == SIGALRM){
+        sendto(sockfd, sndpkt, TCP_HDR_SIZE,  0, (const struct sockaddr *)&serveraddr, serverlen);
+        cleanup();
+        exit(0);
+    }
+}
+
 int main (int argc, char **argv)
 {
     head = createSentElemNode(-1);
@@ -278,9 +292,17 @@ int main (int argc, char **argv)
             VLOG(INFO, "End Of File has been reached");
 
             sndpkt = make_packet(0);
+            // send close
             sendto(sockfd, sndpkt, TCP_HDR_SIZE,  0,
                     (const struct sockaddr *)&serveraddr, serverlen);
-            break;
+            init_timer(5000, resend_packets);
+            start_timer();
+            recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
+            if(recvpkt->hdr.data_size == 0){
+                break;
+            }else{
+                continue;
+            }
         }
         send_bulk(next_seqno, send_base+floor(window_size)*DATA_SIZE);
         // shift next seqno to next unsent piece of data
@@ -325,7 +347,6 @@ int main (int argc, char **argv)
         send_base = fmax(send_base, recvpkt->hdr.ackno);
         removeMinFromSendList(head->next, send_base);
     }
-    free(sndpkt);
+    cleanup();
     return 0;
-
 }
