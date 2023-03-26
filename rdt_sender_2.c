@@ -36,6 +36,7 @@ void update_rto(int sample_rtt){
     estimated_rtt = (1-ALPHA) * estimated_rtt + ALPHA * sample_rtt;
     dev_rtt = (1-BETA) * dev_rtt + BETA * abs(estimated_rtt - sample_rtt);
     rto = estimated_rtt + 4 * dev_rtt;
+    rto = min(10000, max(rto, 150));
 }
 
 int sockfd, serverlen;
@@ -285,7 +286,7 @@ int main (int argc, char **argv)
                 previous = recvpkt->hdr.ackno-DATA_SIZE; 
             }
 
-            if (send_base - DATA_SIZE == recvpkt->hdr.ackno) {   //this checks for packet loss??
+            if (send_base == recvpkt->hdr.ackno - DATA_SIZE) {   //this checks for packet loss??
                 if(floor(window_size)<=ssthresh){
                     window_size++; 
                 }
