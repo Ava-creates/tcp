@@ -85,6 +85,7 @@ int exists_seqno(BufferList* head, int seqno){
         if(curr->pkt->hdr.seqno == seqno){
             return 1;
         }
+        curr = curr->next;
     }
     return 0;
 }
