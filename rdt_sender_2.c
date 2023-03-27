@@ -32,6 +32,7 @@ int done = 0;
 int rto = 3000;
 int estimated_rtt = 0;
 int dev_rtt = 0;
+int last_timeout = 0;
 
 // update rto whenever we get a packet back
 void update_rto(int sample_rtt){
@@ -186,7 +187,10 @@ void resend_packets(int sig){
     if (sig == SIGALRM)
     {
         VLOG(INFO, "Timeout happend");
-        rto*=2;
+        if(last_timeout >= 2){
+            rto*=2;
+        }
+        last_timeout += 1;
         ssthresh=fmax(floor(window_size/2), 2 );  
         window_size=1;   //this will lead to slow start on next sent again as the window_size < ssthresh
         if(head->next){
@@ -318,6 +322,7 @@ int main (int argc, char **argv)
 
         do{
             recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
+            last_timeout = 0;
             recvpkt = (tcp_packet *)buffer;
             int rec = (int) time(NULL) - getTimeFromSendList(head, recvpkt->hdr.ackno-DATA_SIZE);
             printf("rtt for %lu was %d\n", recvpkt->hdr.ackno, rec);
