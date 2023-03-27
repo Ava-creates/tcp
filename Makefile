@@ -7,7 +7,7 @@ SHELL = /bin/bash
 # compiling flags here
 CFLAGS = -Wall -I.
 
-LINKER = gcc -o -lm
+LINKER = gcc -lm -o 
 # linking flags here
 LFLAGS   = -Wall
 
