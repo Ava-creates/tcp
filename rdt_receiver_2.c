@@ -26,6 +26,7 @@
  */
 tcp_packet *recvpkt;
 tcp_packet *sndpkt;
+int expected_seq = 0;
 
 typedef struct blist{
     tcp_packet* pkt;
@@ -125,6 +126,7 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
         BufferList* toRemove = curr;
         curr = curr->next;
         startcpy += toRemove->pkt->hdr.data_size;
+        expected_seq = startcpy;
         free(toRemove);
     }
     
@@ -204,7 +206,6 @@ int main(int argc, char **argv) {
      */
     // VLOG(DEBUG, "epoch time, bytes received, sequence number");
     clientlen = sizeof(clientaddr);
-    int expected_seq = 0;
     int last_packet_read = -1;
     while (1) {
         /*
@@ -272,7 +273,7 @@ int main(int argc, char **argv) {
             }
             printf("discarded\n");
         }
-        write_from_buffer_to_file(head, fp, 0, expected_seq+DATA_SIZE);
+        write_from_buffer_to_file(head, fp, 0, expected_seq);
     }
 
     
