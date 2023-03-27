@@ -93,6 +93,7 @@ BufferList* sort(BufferList* head){
 
 BufferList* addNode(BufferList* head,  tcp_packet *pkt)
 {
+    printf("ADDINg\n");
     BufferList* start = head;
     
     // printf("here\n");
@@ -100,6 +101,7 @@ BufferList* addNode(BufferList* head,  tcp_packet *pkt)
     // printf("of packet tryna store seqno: %d\n", new_pkt->pkt->hdr.seqno);
 
     new_pkt->next = start;
+     printf("done ADDINg\n");
     return sort(new_pkt);
 }
 
