@@ -105,6 +105,31 @@ BufferList* addNode(BufferList* head,  tcp_packet *pkt)
     return sort(new_pkt);
 }
 
+void removePacket(BufferList* head, int seqno){
+    if(head!=NULL && head->pkt->hdr.seqno == seqno){
+        BufferList* cpy = head->next;
+        free(head);
+        head = cpy;
+        return;
+    }
+    BufferList* curr = head;
+    BufferList* prev = NULL;
+    while(curr!=NULL && curr->pkt->hdr.seqno != seqno){
+        prev = curr;
+        curr = curr->next;
+    }
+
+    // could not find for some reason
+    if(curr == NULL){
+        printf("could not find %d\n", seqno);
+        return;
+    }
+
+    prev->next = curr->next;
+    printf("removing %d\n", curr->pkt->hdr.seqno);
+    free(curr);
+}
+
 void printBList(BufferList* head){
     printf("printing now\n");
     BufferList* curr = head;
@@ -121,7 +146,7 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
     int startcpy = start;
     BufferList* curr = head;
     printf("hereeee\n");
-    while(force==1 || (curr!=NULL && startcpy==curr->pkt->hdr.seqno)){
+    while((force==1 && curr!=NULL) || (curr!=NULL && startcpy==curr->pkt->hdr.seqno)){
         printf("h\n");
         printf("seqno: %d\n", curr->pkt->hdr.seqno);
         fseek(fp, curr->pkt->hdr.seqno, SEEK_SET);
@@ -134,7 +159,10 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
         curr = curr->next;
         startcpy += toRemove->pkt->hdr.data_size;
         expected_seq = startcpy;
-        // free(toRemove);
+        free(toRemove);
+    }
+    if(curr == NULL){
+        head = NULL;
     }
     
 }
@@ -253,6 +281,7 @@ int main(int argc, char **argv) {
             printf("correctly received %d\n", expected_seq);
             fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
             fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
+            removePacket(head, recvpkt->hdr.seqno);
             sndpkt = make_packet(0);
             sndpkt->hdr.ackno = recvpkt->hdr.seqno;
             sndpkt->hdr.ctr_flags = ACK;
