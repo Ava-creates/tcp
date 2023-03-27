@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
             last_packet_read = fmax(recvpkt->hdr.seqno, expseqcopy);
         }else{
             // only buffer if expected seq more than sent packet seqno and the seqno isnt buffered already
-            if (expected_seq>recvpkt->hdr.seqno && !exists_seqno(head, recvpkt->hdr.seqno)){
+            if (expected_seq<recvpkt->hdr.seqno && !exists_seqno(head, recvpkt->hdr.seqno)){
                 last_packet_read = recvpkt->hdr.seqno;
                 head = addNode(head, recvpkt);
                 printf("buffering %d, expected %d\n", recvpkt->hdr.seqno, expected_seq);
