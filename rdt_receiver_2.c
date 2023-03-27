@@ -116,13 +116,13 @@ void printBList(BufferList* head){
 void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
 {
     printf("going\n");
+    if(head==NULL){
+        return;
+    }
     int startcpy = start;
     BufferList* curr = head;
     printf("hereeee\n");
-    while(force==1 || (curr!=NULL)){
-        if(startcpy!=curr->pkt->hdr.seqno){
-            break;
-        }
+    while(force==1 || (curr!=NULL && startcpy==curr->pkt->hdr.seqno)){
         printf("h\n");
         printf("seqno: %d\n", curr->pkt->hdr.seqno);
         fseek(fp, curr->pkt->hdr.seqno, SEEK_SET);
