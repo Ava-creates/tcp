@@ -326,10 +326,8 @@ int main (int argc, char **argv)
             recvpkt = (tcp_packet *)buffer;
             int rec = (int) time(NULL) - getTimeFromSendList(head, recvpkt->hdr.ackno-DATA_SIZE);
             printf("rtt for %lu was %d\n", recvpkt->hdr.ackno, rec);
-            if(rec){
-                update_rto(rec);
-                printf("new rtt: %d\n", rto);
-            }
+            update_rto(rec);
+            printf("new rtt: %d\n", rto);
 
             //triple ack 
             if( recvpkt->hdr.ackno - DATA_SIZE== previous && previous==double_previous  && double_previous == triple_previous) {
