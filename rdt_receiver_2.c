@@ -212,7 +212,7 @@ int main(int argc, char **argv) {
             if (expected_seq>recvpkt->hdr.seqno && !exists_seqno(head, recvpkt->hdr.seqno)){
                 last_packet_read = recvpkt->hdr.seqno;
                 head = addNode(head, recvpkt);
-                printf("buffering %d, expected %d\n", expected_seq>recvpkt->hdr.seqno, expected_seq);
+                printf("buffering %d, expected %d\n", recvpkt->hdr.seqno, expected_seq);
             }
             // send back expected seqno
             sndpkt = make_packet(0);
