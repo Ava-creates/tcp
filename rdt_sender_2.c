@@ -38,7 +38,7 @@ void update_rto(int sample_rtt){
     estimated_rtt = (1-ALPHA) * estimated_rtt + ALPHA * sample_rtt;
     dev_rtt = (1-BETA) * dev_rtt + BETA * abs(estimated_rtt - sample_rtt);
     rto = estimated_rtt + 4 * dev_rtt;
-   // rto = fmin(10000, fmax(rto, 150));
+    rto = fmax(10, rto);
 }
 
 int sockfd, serverlen;
