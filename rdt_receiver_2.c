@@ -128,6 +128,9 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
         fwrite(curr->pkt->data, 1, curr->pkt->hdr.data_size, fp);
         // printf("hereeee\n");
         BufferList* toRemove = curr;
+        if(curr == head){
+            head = curr->next;
+        }
         curr = curr->next;
         startcpy += toRemove->pkt->hdr.data_size;
         expected_seq = startcpy;
