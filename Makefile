@@ -1,7 +1,7 @@
 #Reference
 #http://makepp.sourceforge.net/1.19/makepp_tutorial.html
 
-CC = gcc -c -lm
+CC = gcc -lm -c
 SHELL = /bin/bash
 
 # compiling flags here
