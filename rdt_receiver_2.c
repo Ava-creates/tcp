@@ -115,6 +115,7 @@ void printBList(BufferList* head){
 
 void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
 {
+    printf("going\n");
     int startcpy = start;
     BufferList* curr = head;
     // printf("hereeee\n");
