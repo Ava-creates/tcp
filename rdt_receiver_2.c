@@ -44,7 +44,7 @@ BufferList* createBufferList(tcp_packet* pkt){
 BufferList* addNode(BufferList* head,  tcp_packet *pkt)
 {
     BufferList* start = head;
-     
+    
     // printf("here\n");
     BufferList* new_pkt = createBufferList(pkt);
     // printf("of packet tryna store seqno: %d\n", new_pkt->pkt->hdr.seqno);
@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
             last_packet_read = fmax(recvpkt->hdr.seqno, expseqcopy);
         }else{
             // only buffer if expected seq more than sent packet seqno and the seqno isnt buffered already
-            if (expected_seq<recvpkt->hdr.seqno && !exists_seqno(head, recvpkt->hdr.seqno)){
+            if (expected_seq<recvpkt->hdr.seqno && exists_seqno(head, recvpkt->hdr.seqno)==1){
                 last_packet_read = recvpkt->hdr.seqno;
                 head = addNode(head, recvpkt);
                 printf("buffering %d, expected %d\n", recvpkt->hdr.seqno, expected_seq);
