@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
          * sendto: ACK back to the client 
          */
         gettimeofday(&tp, NULL);
-        VLOG(DEBUG, "%d, %lu, %d, %d", expected_seq, tp.tv_sec, recvpkt->hdr.data_size, recvpkt->hdr.seqno);
+        // VLOG(DEBUG, "%d, %lu, %d, %d", expected_seq, tp.tv_sec, recvpkt->hdr.data_size, recvpkt->hdr.seqno);
         
         // discard if packet received is less than next packet expected
 
@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
 
         // the case of an in order packet
         if(expected_seq==recvpkt->hdr.seqno){
-            // just write lmao
+            printf("correctly received %d\n", expected_seq);
             fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
             fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
             sndpkt = make_packet(0);
@@ -211,6 +211,7 @@ int main(int argc, char **argv) {
             if (expected_seq>recvpkt->hdr.seqno && !exists_seqno(head, recvpkt->hdr.seqno)){
                 last_packet_read = recvpkt->hdr.seqno;
                 head = addNode(head, recvpkt);
+                printf("buffering %d, expected %d\n", expected_seq>recvpkt->hdr.seqno, expected_seq);
             }
             // send back expected seqno
             sndpkt = make_packet(0);
