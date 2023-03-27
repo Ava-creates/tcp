@@ -153,13 +153,17 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
         fwrite(curr->pkt->data, 1, curr->pkt->hdr.data_size, fp);
         // printf("hereeee\n");
         BufferList* toRemove = curr;
-        if(curr == head){
+        if(head!=NULL && curr->pkt->hdr.seqno == head->pkt->hdr.seqno){
             head = curr->next;
+        }else{
+            head = NULL;
         }
         curr = curr->next;
         startcpy += toRemove->pkt->hdr.data_size;
         expected_seq = startcpy;
-        // free(toRemove);
+        toRemove->next = NULL;
+        free(toRemove->pkt);
+        free(toRemove);
     }
     if(curr == NULL){
         head = NULL;
@@ -260,7 +264,7 @@ int main(int argc, char **argv) {
             sendto(sockfd, sndpkt, TCP_HDR_SIZE,  0, (const struct sockaddr *)&clientaddr, clientlen);
            // printBList(head);
             printf("DONE\n");
-            write_from_buffer_to_file(head, fp, 1, 1);
+            // write_from_buffer_to_file(head, fp, 1, 1);
             fclose(fp);
             break;
         }
