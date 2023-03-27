@@ -159,6 +159,7 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
             head = NULL;
         }
         curr = curr->next;
+        printf("toRemove: %p curr: %p\n", &toRemove, &curr);
         startcpy += toRemove->pkt->hdr.data_size;
         expected_seq = startcpy;
         toRemove->next = NULL;
