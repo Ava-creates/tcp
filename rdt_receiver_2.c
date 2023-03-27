@@ -81,7 +81,7 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp)
 
 int exists_seqno(BufferList* head, int seqno){
     BufferList* curr = head;
-    while(curr){
+    while(curr!=NULL){
         if(curr->pkt->hdr.seqno == seqno){
             return 1;
         }
