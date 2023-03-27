@@ -121,9 +121,6 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
     int startcpy = start;
     BufferList* curr = head;
     printf("hereeee\n");
-    if(curr == NULL){
-        return;
-    }
     while(force==1 || (curr!=NULL && startcpy==curr->pkt->hdr.seqno)){
         printf("h\n");
         printf("seqno: %d\n", curr->pkt->hdr.seqno);
@@ -280,6 +277,9 @@ int main(int argc, char **argv) {
                 error("ERROR in sendto");
             }
             printf("discarded\n");
+        }
+        if(head == NULL){
+            continue;
         }
         write_from_buffer_to_file(head, fp, 0, expected_seq);
     }
