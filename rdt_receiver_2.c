@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
          * sendto: ACK back to the client 
          */
         gettimeofday(&tp, NULL);
-        // VLOG(DEBUG, "%d, %lu, %d, %d", expected_seq, tp.tv_sec, recvpkt->hdr.data_size, recvpkt->hdr.seqno);
+        VLOG(DEBUG, "%d, %lu, %d, %d", expected_seq, tp.tv_sec, recvpkt->hdr.data_size, recvpkt->hdr.seqno);
         
         // discard if packet received is less than next packet expected
 
