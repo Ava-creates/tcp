@@ -214,7 +214,7 @@ int send_packet(int seq_num){
     memcpy(sndpkt->data, buffer, len);
     sndpkt->hdr.seqno = seq_num;
     sendto(sockfd, sndpkt, TCP_HDR_SIZE + get_data_size(sndpkt),  0, (const struct sockaddr *) &serveraddr, serverlen);
-    printf("sent: %d\n", seq_num);
+    printf("sent: %d with timeout: %d\n", seq_num, rto);
     addtoSendList(head, seq_num);
     init_timer(rto, resend_packets);
     start_timer();
