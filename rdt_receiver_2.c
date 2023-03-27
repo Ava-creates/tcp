@@ -121,6 +121,9 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
     int startcpy = start;
     BufferList* curr = head;
     printf("hereeee\n");
+    if(curr == NULL){
+        printf("is null\n");
+    }
     if(curr!=NULL){
         printf("ok\n");
     }
