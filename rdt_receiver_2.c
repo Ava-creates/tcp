@@ -298,6 +298,7 @@ int main(int argc, char **argv) {
             int expseqcopy = expected_seq;
             expected_seq += recvpkt->hdr.data_size;
             last_packet_read = fmax(recvpkt->hdr.seqno, expseqcopy);
+            write_from_buffer_to_file(head, fp, 0, expected_seq);
         }else{
             // only buffer if expected seq more than sent packet seqno and the seqno isnt buffered already
             if (expected_seq<recvpkt->hdr.seqno && exists_seqno(head, recvpkt->hdr.seqno)==0){
@@ -318,7 +319,6 @@ int main(int argc, char **argv) {
         if(head == NULL){
             continue;
         }
-        write_from_buffer_to_file(head, fp, 0, expected_seq);
     }
 
     
