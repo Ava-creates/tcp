@@ -1,13 +1,13 @@
 #Reference
 #http://makepp.sourceforge.net/1.19/makepp_tutorial.html
 
-CC = gcc -lm -c
+CC = gcc -c
 SHELL = /bin/bash
 
 # compiling flags here
 CFLAGS = -Wall -I.
 
-LINKER = gcc -lm -o 
+LINKER = gcc -o 
 # linking flags here
 LFLAGS   = -Wall
 
@@ -27,11 +27,11 @@ TARGET:	$(OBJDIR) $(CLIENT)	$(SERVER)
 
 
 $(CLIENT):	$(CLIENT_OBJECTS)
-	$(LINKER)  $@  $(CLIENT_OBJECTS)
+	$(LINKER)  $@  $(CLIENT_OBJECTS) -lm
 	@echo "Link complete!"
 
 $(SERVER): $(SERVER_OBJECTS)
-	$(LINKER)  $@  $(SERVER_OBJECTS)
+	$(LINKER)  $@  $(SERVER_OBJECTS) -lm
 	@echo "Link complete!"
 
 $(OBJDIR)/%.o:	%.c common.h packet.h
