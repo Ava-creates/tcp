@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <math.h>
 
 #include "common.h"
 #include "packet.h"
@@ -35,51 +36,21 @@ BufferList* createBufferList(tcp_packet* pkt){
     BufferList* list = (BufferList*) malloc(sizeof(BufferList)); 
     list->next = NULL;
     list->pkt = make_packet(pkt->hdr.data_size);
-    char buffer[DATA_SIZE];
-    memcpy(list->pkt->data, buffer, pkt->hdr.data_size);
+    memcpy(list->pkt->data, pkt->data, pkt->hdr.data_size);
     list->pkt->hdr.seqno = pkt->hdr.seqno;
     return list;
 }
 
-
-
-
-void addNode(BufferList ** head,  tcp_packet *pkt)
+BufferList* addNode(BufferList* head,  tcp_packet *pkt)
 {
-    BufferList  *start ;
-    // printf("here\n");
-    start = *head;
+    BufferList* start = head;
      
     // printf("here\n");
     BufferList* new_pkt = createBufferList(pkt);
     // printf("of packet tryna store seqno: %d\n", new_pkt->pkt->hdr.seqno);
 
-    if(start==NULL)
-    {
-        start = new_pkt;
-        printf("seqno: %d\n", start->pkt->hdr.seqno);
-        // if(head!=NULL)
-        // {
-        //     printf("okay now head not null\n");
-        // }
-
-        *head= start;
-        return;
-    }
-
-    BufferList* curr = start; 
-    while(curr->next && curr->pkt->hdr.seqno < pkt->hdr.seqno){
-        curr = curr->next;
-    }
-    if(!curr->next){
-        curr->next = new_pkt;
-    }else{
-        BufferList* next = curr->next;
-        curr->next = new_pkt;
-        curr->next->next = next; 
-    }   
-    // printf("IDK WHAT'S HAPPENIGN \n");
-    // printf("seqno: %d\n", start->pkt->hdr.seqno);
+    new_pkt->next = start;
+    return new_pkt;
 }
 
 void printBList(BufferList* head){
@@ -98,12 +69,24 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp)
     // printf("hereeee\n");
     while(curr){
         printf("seqno: %d\n", curr->pkt->hdr.seqno);
-        // fseek(fp, curr->pkt->hdr.seqno, SEEK_SET);
-        // fwrite(curr->pkt->data, 1, curr->pkt->hdr.data_size, fp);
+        fseek(fp, curr->pkt->hdr.seqno, SEEK_SET);
+        fwrite(curr->pkt->data, 1, curr->pkt->hdr.data_size, fp);
         // printf("hereeee\n");
+        BufferList* toRemove = curr;
         curr = curr->next;
+        free(toRemove);
     }
     
+}
+
+int exists_seqno(BufferList* head, int seqno){
+    BufferList* curr = head;
+    while(curr){
+        if(curr->pkt->hdr.seqno == seqno){
+            return 1;
+        }
+    }
+    return 0;
 }
 
 
@@ -167,11 +150,10 @@ int main(int argc, char **argv) {
     /* 
      * main loop: wait for a datagram, then echo it
      */
-    VLOG(DEBUG, "epoch time, bytes received, sequence number");
-
+    // VLOG(DEBUG, "epoch time, bytes received, sequence number");
     clientlen = sizeof(clientaddr);
     int expected_seq = 0;
-    int have_seq = -1;
+    int last_packet_read = -1;
     while (1) {
         /*
          * recvfrom: receive a UDP datagram from a client
@@ -198,12 +180,16 @@ int main(int argc, char **argv) {
          */
         gettimeofday(&tp, NULL);
         VLOG(DEBUG, "%d, %lu, %d, %d", expected_seq, tp.tv_sec, recvpkt->hdr.data_size, recvpkt->hdr.seqno);
+        
+        // discard if packet received is less than next packet expected
+
+        // buffer if packet received is more than next packet expected
+
+        // write if packet received is the expected packet
+
+        // the case of an in order packet
         if(expected_seq==recvpkt->hdr.seqno){
-            if(head==NULL)
-            {
-                printf("head is null\n");
-            }
-            addNode(&head, recvpkt);
+            // just write lmao
             fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
             fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
             sndpkt = make_packet(0);
@@ -213,9 +199,20 @@ int main(int argc, char **argv) {
                     (struct sockaddr *) &clientaddr, clientlen) < 0) {
                 error("ERROR in sendto");
             }
-            have_seq = expected_seq;
+            // now that we got 
+            int expseqcopy = expected_seq;
             expected_seq += recvpkt->hdr.data_size;
+            if(expected_seq == last_packet_read){
+                write_from_buffer_to_file(head, fp);
+            }
+            last_packet_read = fmax(recvpkt->hdr.seqno, expseqcopy);
         }else{
+            // only buffer if expected seq more than sent packet seqno and the seqno isnt buffered already
+            if (expected_seq>recvpkt->hdr.seqno && !exists_seqno(head, recvpkt->hdr.seqno)){
+                last_packet_read = recvpkt->hdr.seqno;
+                head = addNode(head, recvpkt);
+            }
+            // send back expected seqno
             sndpkt = make_packet(0);
             sndpkt->hdr.ackno = expected_seq;
             sndpkt->hdr.ctr_flags = ACK;

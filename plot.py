@@ -50,9 +50,9 @@ y = []
 with open(args.cwnd, "r") as f2:
     for idx, line in enumerate(f2):
         [cwnd, time] = line.split(',')
-        x.append(int(cwnd.strip())); y.append(idx+int(time.strip()))     
+        y.append(float(cwnd.strip())); x.append(idx+int(time.strip()))   
 
-ax.fill_between(range(len(BW)), 0, list(map(scale,BW)),color='#D3D3D3')
+# ax.fill_between(range(len(BW)), 0, list(map(scale,BW)),color='#D3D3D3')
 
 # plotting throughput
 throughputDL = []
@@ -78,11 +78,11 @@ for time in traceDL:
 print (timeDL)
 print (throughputDL)
 
-plt.plot(timeDL, throughputDL, lw=2, color='r')
+# plt.plot(timeDL, throughputDL, lw=2, color='r')
+plt.plot(x,y)
 
 plt.ylabel("Throughput (Mbps)")
 plt.xlabel("Time (s)")
 # plt.xlim([0,300])
 plt.grid(True, which="both")
-plt.plot([x,y])
 plt.savefig(args.dir+'/throughput.pdf',dpi=1000,bbox_inches='tight')
