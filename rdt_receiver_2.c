@@ -159,7 +159,7 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
         curr = curr->next;
         startcpy += toRemove->pkt->hdr.data_size;
         expected_seq = startcpy;
-        free(toRemove);
+        // free(toRemove);
     }
     if(curr == NULL){
         head = NULL;
