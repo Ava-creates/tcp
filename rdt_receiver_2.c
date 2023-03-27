@@ -41,6 +41,55 @@ BufferList* createBufferList(tcp_packet* pkt){
     return list;
 }
 
+
+BufferList* merge(BufferList* leftList, BufferList* rightList){
+    BufferList* tempStart = createBufferList(recvpkt);
+    BufferList* dummy = tempStart;
+    while(leftList!=NULL && rightList!=NULL){
+        if(leftList->pkt->hdr.seqno < rightList->pkt->hdr.seqno){
+            dummy->next = leftList;
+            leftList = leftList->next;
+        }else{
+            dummy->next = rightList;
+            rightList = rightList->next;
+        }
+        dummy = dummy->next;
+    }
+    if(rightList != NULL){
+        dummy->next = rightList;
+    }else if(leftList!=NULL){
+        dummy->next = leftList;
+    }
+    BufferList* realStart = tempStart->next;
+    return realStart;
+}
+
+BufferList* sort(BufferList* head){
+    if(head == NULL || head->next == NULL){
+        return head;
+    }
+    BufferList* prev = NULL;
+    BufferList* slow = head;
+    BufferList* fast = head;
+
+    // split the list into half
+    while(fast!=NULL && fast->next!=NULL){
+        prev = slow;
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+
+    //sever the link between 1 before the slow node
+    prev->next = NULL;
+
+    //recurse 😎
+    BufferList* leftList = sort(head);
+    BufferList* rightList = sort(slow);
+
+    return merge(leftList, rightList);
+
+}
+
 BufferList* addNode(BufferList* head,  tcp_packet *pkt)
 {
     BufferList* start = head;
@@ -50,7 +99,7 @@ BufferList* addNode(BufferList* head,  tcp_packet *pkt)
     // printf("of packet tryna store seqno: %d\n", new_pkt->pkt->hdr.seqno);
 
     new_pkt->next = start;
-    return new_pkt;
+    return sort(new_pkt);
 }
 
 void printBList(BufferList* head){
@@ -63,17 +112,19 @@ void printBList(BufferList* head){
 }
 
 
-void write_from_buffer_to_file(BufferList* head, FILE *fp)
+void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
 {
+    int startcpy = start;
     BufferList* curr = head;
     // printf("hereeee\n");
-    while(curr){
+    while(force==1 || (curr!=NULL && startcpy==curr->pkt->hdr.seqno)){
         printf("seqno: %d\n", curr->pkt->hdr.seqno);
         fseek(fp, curr->pkt->hdr.seqno, SEEK_SET);
         fwrite(curr->pkt->data, 1, curr->pkt->hdr.data_size, fp);
         // printf("hereeee\n");
         BufferList* toRemove = curr;
         curr = curr->next;
+        startcpy += toRemove->pkt->hdr.data_size;
         free(toRemove);
     }
     
@@ -172,7 +223,7 @@ int main(int argc, char **argv) {
             sendto(sockfd, sndpkt, TCP_HDR_SIZE,  0, (const struct sockaddr *)&clientaddr, clientlen);
            // printBList(head);
             printf("DONE\n");
-            write_from_buffer_to_file(head, fp);
+            write_from_buffer_to_file(head, fp, 1, 1);
             fclose(fp);
             break;
         }
@@ -203,9 +254,6 @@ int main(int argc, char **argv) {
             // now that we got 
             int expseqcopy = expected_seq;
             expected_seq += recvpkt->hdr.data_size;
-            if(expected_seq == last_packet_read){
-                write_from_buffer_to_file(head, fp);
-            }
             last_packet_read = fmax(recvpkt->hdr.seqno, expseqcopy);
         }else{
             // only buffer if expected seq more than sent packet seqno and the seqno isnt buffered already
@@ -224,6 +272,7 @@ int main(int argc, char **argv) {
             }
             printf("discarded\n");
         }
+        write_from_buffer_to_file(head, fp, 0, expected_seq+DATA_SIZE);
     }
 
     
