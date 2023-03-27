@@ -186,6 +186,7 @@ void resend_packets(int sig){
     if (sig == SIGALRM)
     {
         VLOG(INFO, "Timeout happend");
+        rto*=2;
         ssthresh=fmax(floor(window_size/2), 2 );  
         window_size=1;   //this will lead to slow start on next sent again as the window_size < ssthresh
         if(head->next){
