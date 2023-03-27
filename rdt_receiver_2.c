@@ -121,6 +121,15 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
     int startcpy = start;
     BufferList* curr = head;
     printf("hereeee\n");
+    if(curr!=NULL){
+        printf("ok\n");
+    }
+    if(curr->pkt!=NULL){
+        printf("ok\n");
+    }
+    if(curr->pkt->hdr.seqno){
+        printf("%d\n", curr->pkt->hdr.seqno);
+    }
     while(force==1 || (curr!=NULL && curr->pkt!=NULL && startcpy==curr->pkt->hdr.seqno)){
         printf("h\n");
         printf("seqno: %d\n", curr->pkt->hdr.seqno);
