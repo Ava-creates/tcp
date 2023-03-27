@@ -119,7 +119,7 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
     int startcpy = start;
     BufferList* curr = head;
     printf("hereeee\n");
-    while(force==1 || (curr!=NULL && curr->pkt && curr->pkt->hdr && startcpy==curr->pkt->hdr.seqno)){
+    while(force==1 || (curr!=NULL && curr->pkt && startcpy==curr->pkt->hdr.seqno)){
         printf("h\n");
         printf("seqno: %d\n", curr->pkt->hdr.seqno);
         fseek(fp, curr->pkt->hdr.seqno, SEEK_SET);
