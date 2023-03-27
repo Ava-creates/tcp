@@ -209,6 +209,7 @@ int main(int argc, char **argv) {
     clientlen = sizeof(clientaddr);
     int last_packet_read = -1;
     while (1) {
+        printf("new loop\n");
         /*
          * recvfrom: receive a UDP datagram from a client
          */
