@@ -86,10 +86,11 @@ typedef struct selem{
 sentElemNode* head;
 void resend_packets(int sig);
 sentElemNode* createSentElemNode(int seqno){
+    gettimeofday(&current_time, NULL);
     sentElemNode* newNode = (sentElemNode*) malloc(sizeof(sentElemNode));
     newNode->seqno = seqno;
-    newNode->time = (int) time(NULL);
-    newNode->timeout_at = (int) time(NULL) + rto;
+    newNode->time = current_time.tv_sec;
+    newNode->timeout_at = current_time.tv_sec + rto;
     newNode->next = NULL;
     return newNode;
 }
@@ -166,8 +167,9 @@ int getTimeFromSendList(sentElemNode* head, int seqno){
     printf("found: %d with sent time: %d, curr time: %d \n", seqno, curr->time, (int) time(NULL));
     // on ACK, move timer forwards
     stop_timer();
+    gettimeofday(&current_time, NULL);
     if(curr->next){
-        init_timer(curr->timeout_at - (int) time(NULL), resend_packets);
+        init_timer(curr->timeout_at - current_time.tv_sec, resend_packets);
         start_timer();
     }else{
         timer_running = 0;
@@ -214,7 +216,8 @@ void resend_packets(int sig){
         timer_running = 0;
         if(head->next){
             if(head->next->next){
-                init_timer(head->next->next->timeout_at - (int) time(NULL), resend_packets);
+                gettimeofday(&current_time, NULL);
+                init_timer(head->next->next->timeout_at - current_time.tv_sec, resend_packets);
                 start_timer();
                 timer_running = 1;
             }
@@ -350,7 +353,8 @@ int main (int argc, char **argv)
             recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
             last_timeout = 0;
             recvpkt = (tcp_packet *)buffer;
-            int rec = (int) time(NULL) - getTimeFromSendList(head, recvpkt->hdr.ackno);
+            gettimeofday(&current_time, NULL);
+            int rec = current_time.tv_sec - getTimeFromSendList(head, recvpkt->hdr.ackno);
             printf("rtt for %lu was %d\n", recvpkt->hdr.ackno, rec);
             update_rto(rec);
             printf("new rtt: %d\n", rto);
