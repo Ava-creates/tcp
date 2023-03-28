@@ -166,6 +166,11 @@ long long getTimeFromSendList(sentElemNode* head, int seqno){
     printf("looking for %d\n", seqno);
     // could not find for some reason
     if(curr == NULL){
+        if(head->next){
+            printf("could not find %d, first in head was %d\n", seqno, head->next->seqno);
+        }else{
+            printf("head empty\n");
+        }
         return get_curr_time_ms();
     }
     printf("found: %d with sent time: %d, curr time: %d \n", seqno, curr->time, (int) time(NULL));
