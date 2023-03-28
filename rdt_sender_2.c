@@ -52,6 +52,11 @@ FILE *fp;
 int sent_track = 1;
 int timer_running = 0;
 
+long long get_curr_time_ms(){
+    gettimeofday(&current_time,NULL);
+    return (((long long)current_time.tv_sec)*1000)+(current_time.tv_usec/1000);
+}
+
 int send_packet(int seq_num);
 
 void start_timer()
@@ -79,18 +84,17 @@ void init_timer(int delay, void (*sig_handler)(int))
 
 typedef struct selem{
     int seqno;
-    int time;
-    int timeout_at;
+    long long time;
+    long long timeout_at;
     struct selem* next;
 }sentElemNode;
 sentElemNode* head;
 void resend_packets(int sig);
 sentElemNode* createSentElemNode(int seqno){
-    gettimeofday(&current_time, NULL);
     sentElemNode* newNode = (sentElemNode*) malloc(sizeof(sentElemNode));
     newNode->seqno = seqno;
-    newNode->time = current_time.tv_sec;
-    newNode->timeout_at = current_time.tv_sec + rto;
+    newNode->time = get_curr_time_ms();
+    newNode->timeout_at = get_curr_time_ms() + rto;
     newNode->next = NULL;
     return newNode;
 }
@@ -152,7 +156,7 @@ void removeFromSendList(sentElemNode* head, int seqno){
     free(curr);
 }
 
-int getTimeFromSendList(sentElemNode* head, int seqno){
+long long getTimeFromSendList(sentElemNode* head, int seqno){
     sentElemNode* curr = head;
     sentElemNode* prev = NULL;
     while(curr!=NULL && curr->seqno != seqno){
@@ -162,14 +166,13 @@ int getTimeFromSendList(sentElemNode* head, int seqno){
     printf("looking for %d\n", seqno);
     // could not find for some reason
     if(curr == NULL){
-        return (int) time(NULL);
+        return get_curr_time_ms();
     }
     printf("found: %d with sent time: %d, curr time: %d \n", seqno, curr->time, (int) time(NULL));
     // on ACK, move timer forwards
     stop_timer();
-    gettimeofday(&current_time, NULL);
     if(curr->next){
-        init_timer(curr->timeout_at - current_time.tv_sec, resend_packets);
+        init_timer(curr->timeout_at - get_curr_time_ms(), resend_packets);
         start_timer();
     }else{
         timer_running = 0;
@@ -177,7 +180,7 @@ int getTimeFromSendList(sentElemNode* head, int seqno){
 
 
     prev->next = curr->next;
-    int ret = curr->time;
+    long long ret = curr->time;
     free(curr);
     return ret;
 }
@@ -216,8 +219,7 @@ void resend_packets(int sig){
         timer_running = 0;
         if(head->next){
             if(head->next->next){
-                gettimeofday(&current_time, NULL);
-                init_timer(head->next->next->timeout_at - current_time.tv_sec, resend_packets);
+                init_timer((int) (head->next->next->timeout_at - get_curr_time_ms()), resend_packets);
                 start_timer();
                 timer_running = 1;
             }
@@ -353,8 +355,7 @@ int main (int argc, char **argv)
             recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
             last_timeout = 0;
             recvpkt = (tcp_packet *)buffer;
-            gettimeofday(&current_time, NULL);
-            int rec = current_time.tv_sec - getTimeFromSendList(head, recvpkt->hdr.ackno);
+            int rec = (int) (get_curr_time_ms() - getTimeFromSendList(head, recvpkt->hdr.ackno));
             printf("rtt for %lu was %d\n", recvpkt->hdr.ackno, rec);
             update_rto(rec);
             printf("new rtt: %d\n", rto);
