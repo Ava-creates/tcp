@@ -321,6 +321,7 @@ int main (int argc, char **argv)
         next_seqno = send_base+floor(window_size)*DATA_SIZE;
 
         do{
+            fprintf(output,"%f,%d,%d\n", window_size, (int) time(NULL), ssthresh);
             recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
             last_timeout = 0;
             recvpkt = (tcp_packet *)buffer;
@@ -350,13 +351,13 @@ int main (int argc, char **argv)
            //slow start 
             if(floor(window_size)<=ssthresh){
                     window_size = window_size + 1.0; 
-                    fprintf(output,"%f,%d,%d\n", window_size, (int) time(NULL), ssthresh);
+                    // fprintf(output,"%f,%d,%d\n", window_size, (int) time(NULL), ssthresh);
                     printf("window size is; %f\n", window_size);
                     continue;
                 }
  
             window_size+=1/window_size;   //if not in slow_start then in congestion avoidance
-            fprintf(output,"%f,%d,%d\n", window_size, (int) time(NULL), ssthresh);
+            // fprintf(output,"%f,%d,%d\n", window_size, (int) time(NULL), ssthresh);
             printf("window size is; %f\n", window_size);      
         }      
 
