@@ -50,10 +50,37 @@ tcp_packet *recvpkt;
 sigset_t sigmask;       
 FILE *fp;
 int sent_track = 1;
+int timer_running = 0;
+
+int send_packet(int seq_num);
+
+void start_timer()
+{
+    sigprocmask(SIG_UNBLOCK, &sigmask, NULL);
+    setitimer(ITIMER_REAL, &timer, NULL);
+}
+
+
+void stop_timer()
+{
+    sigprocmask(SIG_BLOCK, &sigmask, NULL);
+}
+void init_timer(int delay, void (*sig_handler)(int)) 
+{
+    signal(SIGALRM, sig_handler);
+    timer.it_interval.tv_sec = delay / 1000;    // sets an interval of the timer
+    timer.it_interval.tv_usec = (delay % 1000) * 1000;  
+    timer.it_value.tv_sec = delay / 1000;       // sets an initial value
+    timer.it_value.tv_usec = (delay % 1000) * 1000;
+
+    sigemptyset(&sigmask);
+    sigaddset(&sigmask, SIGALRM);
+}
 
 typedef struct selem{
     int seqno;
     int time;
+    int timeout_at;
     struct selem* next;
 }sentElemNode;
 sentElemNode* head;
@@ -62,11 +89,17 @@ sentElemNode* createSentElemNode(int seqno){
     sentElemNode* newNode = (sentElemNode*) malloc(sizeof(sentElemNode));
     newNode->seqno = seqno;
     newNode->time = (int) time(NULL);
+    newNode->timeout_at = (int) time(NULL) + rto;
     newNode->next = NULL;
     return newNode;
 }
 
 void addtoSendList(sentElemNode* head, int seqno){
+    if(timer_running == 0){
+        init_timer(rto, resend_packets);
+        start_timer();
+        timer_running = 1;
+    }
     sentElemNode* newNode = createSentElemNode(seqno);
     if(head == NULL){
         head = newNode;
@@ -131,6 +164,16 @@ int getTimeFromSendList(sentElemNode* head, int seqno){
         return (int) time(NULL);
     }
 
+    // on ACK, move timer forwards
+    stop_timer();
+    if(curr->next){
+        init_timer(curr->timeout_at - (int) time(NULL), resend_packets);
+        start_timer();
+    }else{
+        timer_running = 0;
+    }
+
+
     prev->next = curr->next;
     int ret = curr->time;
     free(curr);
@@ -156,32 +199,6 @@ int getTimeFromSendList(sentElemNode* head, int seqno){
  * sig_handler: signal handler function for re-sending unACKed packets
  */
 
-
-void start_timer()
-{
-    sigprocmask(SIG_UNBLOCK, &sigmask, NULL);
-    setitimer(ITIMER_REAL, &timer, NULL);
-}
-
-
-void stop_timer()
-{
-    sigprocmask(SIG_BLOCK, &sigmask, NULL);
-}
-void init_timer(int delay, void (*sig_handler)(int)) 
-{
-    signal(SIGALRM, sig_handler);
-    timer.it_interval.tv_sec = delay / 1000;    // sets an interval of the timer
-    timer.it_interval.tv_usec = (delay % 1000) * 1000;  
-    timer.it_value.tv_sec = delay / 1000;       // sets an initial value
-    timer.it_value.tv_usec = (delay % 1000) * 1000;
-
-    sigemptyset(&sigmask);
-    sigaddset(&sigmask, SIGALRM);
-}
-
-int send_packet(int seq_num);
-
 // resent packets with current base
 void resend_packets(int sig){
     if (sig == SIGALRM)
@@ -193,7 +210,14 @@ void resend_packets(int sig){
         last_timeout += 1;
         ssthresh=fmax(floor(window_size/2), 2 );  
         window_size=1;   //this will lead to slow start on next sent again as the window_size < ssthresh
+        stop_timer();
+        timer_running = 0;
         if(head->next){
+            if(head->next->next){
+                init_timer(head->next->next->timeout_at - (int) time(NULL), resend_packets);
+                start_timer();
+                timer_running = 1;
+            }
             send_packet(head->next->seqno);
             sentElemNode* toRemove = head->next;
             head->next = head->next->next;
