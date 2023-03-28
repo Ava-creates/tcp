@@ -163,7 +163,7 @@ int getTimeFromSendList(sentElemNode* head, int seqno){
     if(curr == NULL){
         return (int) time(NULL);
     }
-
+    printf("found: %d with sent time: %d, curr time: %d \n", seqno, curr->time, (int) time(NULL));
     // on ACK, move timer forwards
     stop_timer();
     if(curr->next){
