@@ -350,7 +350,7 @@ int main (int argc, char **argv)
             recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
             last_timeout = 0;
             recvpkt = (tcp_packet *)buffer;
-            int rec = (int) time(NULL) - getTimeFromSendList(head, recvpkt->hdr.ackno-DATA_SIZE);
+            int rec = (int) time(NULL) - getTimeFromSendList(head, recvpkt->hdr.ackno);
             printf("rtt for %lu was %d\n", recvpkt->hdr.ackno, rec);
             update_rto(rec);
             printf("new rtt: %d\n", rto);
