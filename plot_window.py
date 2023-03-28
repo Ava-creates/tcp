@@ -5,7 +5,6 @@ window_size = []
 ssthresh = []
 
 with open("CWND.csv", "r") as fp:
-    fp.readline()
     for line in fp:
         data = line.strip().split(",")
         window_size.append(float(data[0]))
@@ -18,13 +17,13 @@ ax2 = ax1.twinx()
 
 # plot first set of data
 ax1.plot(x, window_size, "g-")
-ax1.set_ylim([min(window_size), max(window_size)])
+ax1.set_ylim([min(window_size)-1, max(window_size)])
 #ax1.set_ylim([0, 100])
 # plot second set of data
 ax2.step(x, ssthresh, "r--")
-ax2.set_ylim([min(ssthresh), max(ssthresh)])
-ax2.set_xlim([min(x),max(x)])
-ax1.set_xlim([min(x),max(x)])
+ax2.set_ylim([min(ssthresh)-1, max(ssthresh)])
+ax2.set_xlim([min(x)-1,max(x)])
+ax1.set_xlim([min(x)-1,max(x)])
 # ax1.set_xlim([min(x),min(x)+10])
 
 
