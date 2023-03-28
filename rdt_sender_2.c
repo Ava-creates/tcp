@@ -84,7 +84,7 @@ typedef struct selem{
     struct selem* next;
 }sentElemNode;
 sentElemNode* head;
-
+void resend_packets(int sig);
 sentElemNode* createSentElemNode(int seqno){
     sentElemNode* newNode = (sentElemNode*) malloc(sizeof(sentElemNode));
     newNode->seqno = seqno;
