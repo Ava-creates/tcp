@@ -19,7 +19,7 @@
 #define ALPHA 0.125
 #define BETA 0.25
 
-
+struct timeval current_time;
 int ssthresh=64; 
 int next_seqno=0;
 int send_base=0;
@@ -321,7 +321,8 @@ int main (int argc, char **argv)
         next_seqno = send_base+floor(window_size)*DATA_SIZE;
 
         do{
-            fprintf(output,"%f,%d,%d\n", window_size, (int) time(NULL), ssthresh);
+            gettimeofday(&current_time, NULL);
+            fprintf(output,"%f,%ld.%ld,%d\n", window_size, current_time.tv_sec,current_time.tv_usec, ssthresh);
             recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
             last_timeout = 0;
             recvpkt = (tcp_packet *)buffer;
