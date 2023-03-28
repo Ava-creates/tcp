@@ -158,7 +158,7 @@ int getTimeFromSendList(sentElemNode* head, int seqno){
         prev = curr;
         curr = curr->next;
     }
-
+    printf("looking for %d\n", seqno);
     // could not find for some reason
     if(curr == NULL){
         return (int) time(NULL);
