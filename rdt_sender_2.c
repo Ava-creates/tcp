@@ -350,13 +350,13 @@ int main (int argc, char **argv)
            //slow start 
             if(floor(window_size)<=ssthresh){
                     window_size = window_size + 1.0; 
-                    fprintf(output,"%f,%d\n", window_size, (int) time(NULL));
+                    fprintf(output,"%f,%d,%d\n", window_size, (int) time(NULL), ssthresh);
                     printf("window size is; %f\n", window_size);
                     continue;
                 }
  
             window_size+=1/window_size;   //if not in slow_start then in congestion avoidance
-            fprintf(output,"%f,%d\n", window_size, (int) time(NULL));
+            fprintf(output,"%f,%d,%d\n", window_size, (int) time(NULL), ssthresh);
             printf("window size is; %f\n", window_size);      
         }      
 
