@@ -322,7 +322,7 @@ int main (int argc, char **argv)
 
         do{
             gettimeofday(&current_time, NULL);
-            fprintf(output,"%f,%ld.%ld,%d\n", window_size, current_time.tv_sec,current_time.tv_usec, ssthresh);
+            fprintf(output,"%f,%ld.%06ld,%d\n", window_size, current_time.tv_sec,current_time.tv_usec, ssthresh);
             recvfrom(sockfd, buffer, MSS_SIZE, 0, (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen);
             last_timeout = 0;
             recvpkt = (tcp_packet *)buffer;
