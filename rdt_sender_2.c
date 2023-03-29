@@ -361,17 +361,18 @@ int main (int argc, char **argv)
             last_timeout = 0;
             recvpkt = (tcp_packet *)buffer;
             int rec = (int) (get_curr_time_ms() - getTimeFromSendList(head, recvpkt->hdr.ackno));
-            printf("rtt for %lu was %d\n", recvpkt->hdr.ackno, rec);
+            // printf("rtt for %lu was %d\n", recvpkt->hdr.ackno, rec);
             update_rto(rec);
-            printf("new rtt: %d\n", rto);
+            // printf("new rtt: %d\n", rto);
 
             //triple ack 
             if( recvpkt->hdr.ackno - DATA_SIZE== previous && previous==double_previous  && double_previous == triple_previous) {
                     ssthresh=floor(fmax(window_size/2, 2));
                     window_size=1;
-                    send_packet(recvpkt->hdr.ackno);
 
-                    printf("fast retransmit \n");
+                    send_packet(recvpkt->hdr.ackno);  
+
+                    // printf("fast retransmit \n");
 
                     continue;
                     //slow start begins again on the next receive automatically cause window_size < ssthresh 
@@ -387,20 +388,20 @@ int main (int argc, char **argv)
             if(floor(window_size)<=ssthresh){
                     window_size = window_size + 1.0; 
                     // fprintf(output,"%f,%d,%d\n", window_size, (int) time(NULL), ssthresh);
-                    printf("window size is; %f\n", window_size);
+                    //printf("window size is; %f\n", window_size);
                     continue;
                 }
  
             window_size+=1/window_size;   //if not in slow_start then in congestion avoidance
             // fprintf(output,"%f,%d,%d\n", window_size, (int) time(NULL), ssthresh);
-            printf("window size is; %f\n", window_size);      
+            // printf("window size is; %f\n", window_size);      
         }      
 
         while(recvpkt->hdr.ackno < send_base);
 
         send_base = fmax(send_base, recvpkt->hdr.ackno);
         removeMinFromSendList(head->next, send_base);
-        printf("curr window: %d to %f\n", send_base, send_base+floor(window_size)*(double)DATA_SIZE);
+        //printf("curr window: %d to %f\n", send_base, send_base+floor(window_size)*(double)DATA_SIZE);
     }
     cleanup();
     fclose(output);

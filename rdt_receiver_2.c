@@ -126,7 +126,7 @@ void removePacket(BufferList* head, int seqno){
     }
 
     prev->next = curr->next;
-    printf("removing %d\n", curr->pkt->hdr.seqno);
+    // printf("removing %d\n", curr->pkt->hdr.seqno);
     free(curr);
 }
 
@@ -134,7 +134,7 @@ void printBList(BufferList* head){
     printf("printing now\n");
     BufferList* curr = head;
     while(curr){
-        printf("seqno: %d\n", curr->pkt->hdr.seqno);
+        // printf("seqno: %d\n", curr->pkt->hdr.seqno);
         curr = curr->next;
     }
 }
@@ -142,16 +142,15 @@ void printBList(BufferList* head){
 
 void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
 {
-    printf("going\n");
+   
     int startcpy = start;
     BufferList* curr = head;
-    printf("hereeee\n");
+
     while((force==1 && curr!=NULL) || (curr!=NULL && startcpy==curr->pkt->hdr.seqno)){
-        printf("h\n");
-        printf("seqno: %d\n", curr->pkt->hdr.seqno);
+       
         fseek(fp, curr->pkt->hdr.seqno, SEEK_SET);
         fwrite(curr->pkt->data, 1, curr->pkt->hdr.data_size, fp);
-        // printf("hereeee\n");
+        
         BufferList* toRemove = curr;
         if(head!=NULL && curr->pkt->hdr.seqno == head->pkt->hdr.seqno){
             head = curr->next;
@@ -245,7 +244,7 @@ int main(int argc, char **argv) {
     clientlen = sizeof(clientaddr);
     int last_packet_read = -1;
     while (1) {
-        printf("new loop\n");
+       
         /*
          * recvfrom: receive a UDP datagram from a client
          */
@@ -301,7 +300,7 @@ int main(int argc, char **argv) {
             if (expected_seq<recvpkt->hdr.seqno && exists_seqno(head, recvpkt->hdr.seqno)==0){
                 last_packet_read = recvpkt->hdr.seqno;
                 head = addNode(head, recvpkt);
-                printf("buffering %d, expected %d\n", recvpkt->hdr.seqno, expected_seq);
+                // printf("buffering %d, expected %d\n", recvpkt->hdr.seqno, expected_seq);
             }
             // send back expected seqno
             sndpkt = make_packet(0);
@@ -311,7 +310,7 @@ int main(int argc, char **argv) {
                     (struct sockaddr *) &clientaddr, clientlen) < 0) {
                 error("ERROR in sendto");
             }
-            printf("discarded\n");
+            // printf("discarded\n");
         }
         if(head == NULL){
             continue;
