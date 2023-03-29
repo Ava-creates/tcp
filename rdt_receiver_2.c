@@ -93,15 +93,15 @@ BufferList* sort(BufferList* head){
 
 BufferList* addNode(BufferList* head,  tcp_packet *pkt)
 {
-    printf("ADDINg\n");
+   
     BufferList* start = head;
     
-    // printf("here\n");
+    
     BufferList* new_pkt = createBufferList(pkt);
     // printf("of packet tryna store seqno: %d\n", new_pkt->pkt->hdr.seqno);
 
     new_pkt->next = start;
-     printf("done ADDINg\n");
+    
     return sort(new_pkt);
 }
 
@@ -121,7 +121,7 @@ void removePacket(BufferList* head, int seqno){
 
     // could not find for some reason
     if(curr == NULL){
-        printf("could not find %d\n", seqno);
+        // printf("could not find %d\n", seqno);
         return;
     }
 
@@ -131,7 +131,7 @@ void removePacket(BufferList* head, int seqno){
 }
 
 void printBList(BufferList* head){
-    printf("printing now\n");
+    // printf("printing now\n");
     BufferList* curr = head;
     while(curr){
         // printf("seqno: %d\n", curr->pkt->hdr.seqno);
@@ -158,7 +158,7 @@ void write_from_buffer_to_file(BufferList* head, FILE *fp, int force, int start)
             head = NULL;
         }
         curr = curr->next;
-        printf("toRemove: %p curr: %p\n", &toRemove, &curr);
+        
         startcpy += toRemove->pkt->hdr.data_size;
         expected_seq = startcpy;
     }
@@ -279,7 +279,7 @@ int main(int argc, char **argv) {
 
         // the case of an in order packet
         if(expected_seq==recvpkt->hdr.seqno){
-            printf("correctly received %d\n", expected_seq);
+            // printf("correctly received %d\n", expected_seq);
             fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
             fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
             removePacket(head, recvpkt->hdr.seqno);
