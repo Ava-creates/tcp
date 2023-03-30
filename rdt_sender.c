@@ -167,13 +167,13 @@ long long getTimeFromSendList(sentElemNode* head, int seqno){
     // could not find for some reason
     if(curr == NULL){
         if(head->next){
-            printf("could not find %d, first in head was %d\n", seqno, head->next->seqno);
+            //printf("could not find %d, first in head was %d\n", seqno, head->next->seqno);
         }else{
-            printf("head empty\n");
+            //printf("head empty\n");
         }
         return get_curr_time_ms();
     }
-    printf("found: %d with sent time: %d, curr time: %d \n", seqno, curr->time, (int) time(NULL));
+    //printf("found: %d with sent time: %d, curr time: %d \n", seqno, curr->time, (int) time(NULL));
     // on ACK, move timer forwards
     stop_timer();
     if(curr->next){
@@ -253,7 +253,7 @@ int send_packet(int seq_num){
     memcpy(sndpkt->data, buffer, len);
     sndpkt->hdr.seqno = seq_num;
     sendto(sockfd, sndpkt, TCP_HDR_SIZE + get_data_size(sndpkt),  0, (const struct sockaddr *) &serveraddr, serverlen);
-    printf("sent: %d with timeout: %d\n", seq_num, rto);
+    //printf("sent: %d with timeout: %d\n", seq_num, rto);
     addtoSendList(head, seq_num);
     init_timer(rto, resend_packets);
     start_timer();
